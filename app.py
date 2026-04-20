@@ -1,49 +1,49 @@
 import streamlit as st
-from moviepy.editor import VideoFileClip, AudioFileClip
+from moviepy.editor import VideoFileClip, AudioFileClip, vfx
 import os
 
-# App ရဲ့ ခေါင်းစဉ်
-st.set_page_config(page_title="MLBB Auto Editor", page_icon="🎮")
-st.title("🇲🇲 MLBB Auto-Edit Web App")
-st.write("သင့်ရဲ့ Gameplay ဗီဒီယိုနဲ့ မြန်မာသီချင်းကို ရွေးပေးလိုက်ပါ")
+st.set_page_config(page_title="MLBB Pro Editor", page_icon="🎬")
+st.title("🎬 MLBB Slow-Mo Editor")
 
-# ဖိုင်တင်ရန် နေရာများ
-uploaded_video = st.file_uploader("MLBB Gameplay Video (MP4) တင်ပါ", type=["mp4", "mov"])
-uploaded_audio = st.file_uploader("မြန်မာသီချင်း (MP3) တင်ပါ", type=["mp3", "wav"])
+video_file = st.file_uploader("MLBB Gameplay (MP4) တင်ပါ", type=['mp4'])
+audio_file = st.file_uploader("သီချင်း (MP3) တင်ပါ", type=['mp3'])
 
-if uploaded_video and uploaded_audio:
-    if st.button("Edit စလုပ်မယ် ✨"):
-        with st.spinner('AI က ဗီဒီယိုကို မြန်မာသီချင်းနဲ့ ညှိပြီး တည်းဖြတ်ပေးနေပါတယ်...'):
-            try:
-                # ဖိုင်များကို ခေတ္တသိမ်းဆည်းခြင်း
-                with open("temp_v.mp4", "wb") as f:
-                    f.write(uploaded_video.getbuffer())
-                with open("temp_a.mp3", "wb") as f:
-                    f.write(uploaded_audio.getbuffer())
+if video_file and audio_file:
+    if st.button("Slow Motion နဲ့ Edit မယ်"):
+        with st.spinner("Slow Motion ထည့်ပြီး ဗီဒီယို ပြင်နေပါတယ်..."):
+            # ယာယီသိမ်းခြင်း
+            with open("temp_v.mp4", "wb") as f:
+                f.write(video_file.read())
+            with open("temp_a.mp3", "wb") as f:
+                f.write(audio_file.read())
 
-                # Video နှင့် Audio ကို Load လုပ်ခြင်း
-                video = VideoFileClip("temp_v.mp4")
-                audio = AudioFileClip("temp_a.mp3")
-                
-                # ဗီဒီယိုကို သီချင်းအရှည်အတိုင်း (သို့) သီချင်းကို ဗီဒီယိုအရှည်အတိုင်း ညှိခြင်း
-                duration = min(video.duration, audio.duration)
-                final_video = video.subclip(0, duration).set_audio(audio.set_duration(duration))
-                
-                # Result ထုတ်ခြင်း
-                output_path = "mlbb_final_edit.mp4"
-                final_video.write_videofile(output_path, codec="libx264", audio_codec="aac")
+            video = VideoFileClip("temp_v.mp4")
+            audio = AudioFileClip("temp_a.mp3")
 
-                # Video ပြသခြင်းနှင့် Download ပေးခြင်း
-                st.success("တည်းဖြတ်ပြီးပါပြီ!")
-                st.video(output_path)
-                
-                with open(output_path, "rb") as file:
-                    st.download_button(
-                        label="ဗီဒီယိုကို ဒေါင်းလုဒ်ဆွဲမည် ⬇️",
-                        data=file,
-                        file_name="MLBB_AutoEdit_Myanmar.mp4",
-                        mime="video/mp4"
-                    )
-            except Exception as e:
-                st.error(f"အမှားတစ်ခုရှိနေပါတယ်: {e}")
+            # ဗီဒီယို အရှည်ကို သီချင်းနဲ့ ညှိမယ်
+            duration = min(video.duration, audio.duration)
+            video = video.subclip(0, duration)
+
+            # အလယ်ပိုင်းကို Slow Motion လုပ်ခြင်း (ဥပမာ- စက္ကန့် ၂၀ ကနေ ၃၀ ကြား)
+            # ဗီဒီယိုရဲ့ ၅၀% ကနေ ၇၀% အပိုင်းကို 0.5x အနှေးလုပ်မယ်
+            start_slow = duration * 0.4
+            end_slow = duration * 0.7
+            
+            part1 = video.subclip(0, start_slow)
+            part2 = video.subclip(start_slow, end_slow).fx(vfx.speedx, 0.5) # 0.5 က အနှေးနှုန်းပါ
+            part3 = video.subclip(end_slow, duration)
+
+            from moviepy.editor import concatenate_videoclips
+            final_video = concatenate_videoclips([part1, part2, part3])
+            
+            # သီချင်းပြန်ထည့်မယ်
+            final_video = final_video.set_audio(audio)
+            
+            # ဗီဒီယို ထုတ်မယ်
+            output_path = "mlbb_slowmo.mp4"
+            final_video.write_videofile(output_path, fps=24, codec="libx264")
+
+            st.success("ပြုပြင်ပြီးပါပြီ!")
+            with open(output_path, "rb") as file:
+                st.download_button("Slow-Mo ဗီဒီယို သိမ်းမယ်", file, output_path)
                 
